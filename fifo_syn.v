@@ -15,8 +15,8 @@ module  fifo_syn #
     //input;
     input    wire    clk,                //only one clock;
     input    wire    rst_n,
-    input    wire    wr,                 //wr request;
-    input    wire    rd,                 //rd request;
+    input    wire    wr_req,                 //wr_req request;
+    input    wire    rd_req,                 //rd_req request;
     input    wire    [WIDTH-1:0]  data,  //data in;
     //output;
     output   wire    [WIDTH-1:0]  q,     //data out;       
@@ -30,68 +30,94 @@ begin
         depth = depth >>1;                       	
 end
 endfunction               
+
 (* ramstyle = "M9K" *) reg [WIDTH-1:0]      memory [0:DEPTH-1];
-reg [clogb2(DEPTH):0] wr_poi;    //wr pointer;
-reg [clogb2(DEPTH):0] rd_poi;    //rd pointer;
+
+reg [clogb2(DEPTH):0] wr_poi;    //wr_req pointer;
+reg [clogb2(DEPTH):0] rd_poi;    //rd_req pointer;
+
 reg [WIDTH-1:0] q_r;            //reg q;
 reg [clogb2(DEPTH)-1:0] usedw_r;   //reg usedw_r;
-wire wr_flag;                   //real wr request;
-wire rd_flag;                   //real rd request;
+wire wr_flag;                   //real wr_req request;
+wire rd_flag;                   //real rd_req request;
+
 assign q = q_r;
 assign usedw = usedw_r;
+
 assign full = (wr_poi[clogb2(DEPTH)-1:0]== rd_poi[clogb2(DEPTH)-1:0]) && (wr_poi[clogb2(DEPTH)] ^ rd_poi[clogb2(DEPTH)] == 1);  //highest bit is not same but rests bit is same;
 assign empty = (wr_poi[clogb2(DEPTH)-1:0]== rd_poi[clogb2(DEPTH)-1:0]) && (wr_poi[clogb2(DEPTH)] ^ rd_poi[clogb2(DEPTH)] == 0); //every bit is same;
-assign wr_flag = ((wr == 1'b1) && (full == 1'b0));          //wr enable;
-assign rd_flag = ((rd == 1'b1) && (empty == 1'b0));         //rd enable;
-always @(posedge clk or negedge rst_n) begin
-    if (~rst_n) begin
+
+assign wr_flag = ((wr_req == 1'b1) && (full == 1'b0));          //wr_req enable;
+assign rd_flag = ((rd_req == 1'b1) && (empty == 1'b0));         //rd_req enable;
+
+always @(posedge clk or negedge rst_n) 
+begin
+    if (~rst_n) 
+    begin
         wr_poi <= 0;
     end //if
-    else begin
+    else 
+    begin
         wr_poi <= wr_flag ? wr_poi + 1'b1 : wr_poi;
         memory[wr_poi[clogb2(DEPTH)-1:0]] <= wr_flag ? data : memory[wr_poi[clogb2(DEPTH)-1:0]];
     end //else
 end //always
-always @(posedge clk or negedge rst_n) begin
-    if (~rst_n) begin
+
+always @(posedge clk or negedge rst_n) 
+begin
+    if (~rst_n) 
+    begin
         rd_poi <= 0;
         q_r <= 0;
     end //if
-    else begin
+    else 
+    begin
         rd_poi <= rd_flag ? rd_poi + 1'b1 : rd_poi;
         q_r <= rd_flag ? memory[rd_poi[clogb2(DEPTH)-1:0]] : q_r;
     end //else
 end //always
-always @(posedge clk or negedge rst_n) begin
-    if (~rst_n) begin
+
+always @(posedge clk or negedge rst_n) 
+begin
+    if (~rst_n) 
+    begin
         usedw_r <= 0;
     end //if
-    else begin
+    else 
+    begin
         case ({wr_flag,rd_flag})
-               2'b00: begin
-                   usedw_r <= usedw_r;
-               end 
-               2'b10: begin
-                   if (usedw_r == DEPTH-1) begin  // full;
-                       usedw_r <= usedw_r;
-                   end
-                   else begin
-                       usedw_r <= usedw_r + 1'b1;
-                   end
-               end
-               2'b01: begin
-                   if (usedw_r == 0) begin     //empty;
-                       usedw_r <= usedw_r;
-                   end
-                   else begin
-                       usedw_r <= usedw_r - 1'b1;
-                   end
-               end
-               2'b11: begin
-                   usedw_r <= usedw_r;
-               end                                             
-               default:  usedw_r <= 0;
-           endcase //case   
+            2'b00: 
+            begin
+                usedw_r <= usedw_r;
+            end 
+            2'b10: 
+            begin
+                if (usedw_r == DEPTH-1) 
+                begin  // full;
+                    usedw_r <= usedw_r;
+                end
+                else 
+                begin
+                    usedw_r <= usedw_r + 1'b1;
+                end
+            end
+            2'b01: 
+            begin
+                if (usedw_r == 0) 
+                begin     //empty;
+                    usedw_r <= usedw_r;
+                end
+                else 
+                begin
+                    usedw_r <= usedw_r - 1'b1;
+                end
+            end
+            2'b11: 
+            begin
+                usedw_r <= usedw_r;
+            end                                             
+            default:  usedw_r <= 0;
+        endcase //case   
     end //else
 end //always
 
