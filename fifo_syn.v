@@ -6,7 +6,12 @@
 //  Device        : Altera cyclone4 ep4ce6f17c8  
 //  Description   : synchronize fifo ;8*8 ;depth shuold be 2^n,otherwise change the clogb2 funtion;                           
 //************************************************
-module  fifo_syn #(parameter WIDTH = 8,DEPTH = 8)( 
+module  fifo_syn #
+(
+    parameter WIDTH = 8,
+    parameter DEPTH = 8
+)
+( 
     //input;
     input    wire    clk,                //only one clock;
     input    wire    rst_n,
